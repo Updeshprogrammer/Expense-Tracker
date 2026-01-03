@@ -28,7 +28,7 @@ export default function Dashboard() {
 
       // Fetch monthly expenses
       const expensesRes = await fetch(
-        `/api/expenses?month=${month}&year=${year}`
+        `/api/expenses?month={month}&year=${year}`
       );
       const expenses = await expensesRes.json();
 
@@ -60,7 +60,10 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -68,165 +71,117 @@ export default function Dashboard() {
   const budgetPercentage = stats.budget?.percentage || 0;
   const isOverBudget = budgetPercentage > 100;
 
+  const statCards = [
+    {
+      title: 'Monthly Expenses',
+      value: `$${stats.monthlyExpenses.toFixed(2)}`,
+      icon: (
+        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      gradient: 'from-blue-500 to-blue-600',
+      bgGradient: 'from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20',
+    },
+    {
+      title: 'Categories',
+      value: stats.categoryCount.toString(),
+      icon: (
+        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
+      gradient: 'from-purple-500 to-purple-600',
+      bgGradient: 'from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20',
+    },
+    {
+      title: 'Monthly Budget',
+      value: stats.budget?.budget?.amount
+        ? `$${stats.budget.budget.amount.toFixed(2)}`
+        : 'Not set',
+      icon: (
+        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      ),
+      gradient: 'from-green-500 to-green-600',
+      bgGradient: 'from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20',
+    },
+    {
+      title: 'Budget Status',
+      value: stats.budget?.percentage
+        ? `${stats.budget.percentage.toFixed(1)}%`
+        : 'N/A',
+      icon: (
+        <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      gradient: isOverBudget
+        ? 'from-red-500 to-red-600'
+        : stats.budget?.percentage > 80
+        ? 'from-yellow-500 to-yellow-600'
+        : 'from-green-500 to-green-600',
+      bgGradient: isOverBudget
+        ? 'from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20'
+        : stats.budget?.percentage > 80
+        ? 'from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20'
+        : 'from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20',
+      textColor: isOverBudget
+        ? 'text-red-600 dark:text-red-400'
+        : stats.budget?.percentage > 80
+        ? 'text-yellow-600 dark:text-yellow-400'
+        : 'text-green-600 dark:text-green-400',
+    },
+  ];
+
   return (
-    <div className="px-4 py-6 sm:px-0">
+    <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Welcome back, {session?.user?.name}!
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          Welcome back, {session?.user?.name?.split(' ')[0]}! 👋
         </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
+        <p className="text-gray-600 dark:text-gray-400 text-lg">
           Here's an overview of your expenses
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-gray-800">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-6 w-6 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                    Monthly Expenses
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                    ${stats.monthlyExpenses.toFixed(2)}
-                  </dd>
-                </dl>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+        {statCards.map((card, index) => (
+          <div
+            key={index}
+            className={`bg-gradient-to-br ${card.bgGradient} backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1`}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className={`p-3 bg-gradient-to-br ${card.gradient} rounded-xl shadow-lg`}>
+                <div className="text-white">{card.icon}</div>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-gray-800">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-6 w-6 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                    Categories
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                    {stats.categoryCount}
-                  </dd>
-                </dl>
-              </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                {card.title}
+              </p>
+              <p
+                className={`text-2xl sm:text-3xl font-bold ${
+                  card.textColor || 'text-gray-900 dark:text-white'
+                }`}
+              >
+                {card.value}
+              </p>
             </div>
           </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-gray-800">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-6 w-6 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                  />
-                </svg>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                    Monthly Budget
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900 dark:text-white">
-                    {stats.budget?.budget?.amount
-                      ? `$${stats.budget.budget.amount.toFixed(2)}`
-                      : 'Not set'}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg dark:bg-gray-800">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-6 w-6 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                    Budget Status
-                  </dt>
-                  <dd
-                    className={`text-lg font-medium ${
-                      isOverBudget
-                        ? 'text-red-600'
-                        : stats.budget?.percentage > 80
-                        ? 'text-yellow-600'
-                        : 'text-green-600'
-                    }`}
-                  >
-                    {stats.budget?.percentage
-                      ? `${stats.budget.percentage.toFixed(1)}%`
-                      : 'N/A'}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
+      {/* Budget Alert */}
       {isOverBudget && (
-        <div className="mb-8 bg-red-50 border-l-4 border-red-400 p-4 dark:bg-red-900/20">
-          <div className="flex">
+        <div className="mb-8 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-l-4 border-red-500 rounded-xl p-4 sm:p-6 shadow-lg">
+          <div className="flex items-start">
             <div className="flex-shrink-0">
               <svg
-                className="h-5 w-5 text-red-400"
+                className="h-6 w-6 text-red-500"
                 viewBox="0 0 20 20"
                 fill="currentColor"
               >
@@ -237,56 +192,84 @@ export default function Dashboard() {
                 />
               </svg>
             </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700 dark:text-red-300">
-                <strong>Budget Exceeded!</strong> You have exceeded your monthly
-                budget. Consider reviewing your expenses.
+            <div className="ml-3 flex-1">
+              <h3 className="text-lg font-semibold text-red-800 dark:text-red-300 mb-1">
+                Budget Exceeded!
+              </h3>
+              <p className="text-sm text-red-700 dark:text-red-400">
+                You have exceeded your monthly budget. Consider reviewing your expenses.
               </p>
             </div>
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="bg-white shadow rounded-lg p-6 dark:bg-gray-800">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sm:p-8 border border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-6">
             Quick Actions
           </h2>
           <div className="space-y-3">
             <Link
               href="/dashboard/expenses/new"
-              className="block w-full text-left px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className="block w-full text-left px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all transform hover:scale-[1.02] shadow-lg shadow-blue-500/50"
             >
-              Add New Expense
+              <div className="flex items-center justify-between">
+                <span>Add New Expense</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
             </Link>
             <Link
               href="/dashboard/budget"
-              className="block w-full text-left px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+              className="block w-full text-left px-6 py-4 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
             >
               Set Monthly Budget
             </Link>
             <Link
               href="/dashboard/analytics"
-              className="block w-full text-left px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+              className="block w-full text-left px-6 py-4 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
             >
               View Analytics
             </Link>
           </div>
         </div>
 
-        <div className="bg-white shadow rounded-lg p-6 dark:bg-gray-800">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            Recent Expenses
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sm:p-8 border border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            Recent Activity
           </h2>
-          <Link
-            href="/dashboard/expenses"
-            className="text-blue-600 hover:text-blue-700 text-sm"
-          >
-            View all expenses →
-          </Link>
+          <div className="text-center py-8">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+              />
+            </svg>
+            <p className="mt-4 text-gray-600 dark:text-gray-400 mb-4">
+              View your recent expenses
+            </p>
+            <Link
+              href="/dashboard/expenses"
+              className="inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-semibold"
+            >
+              View all expenses
+              <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-

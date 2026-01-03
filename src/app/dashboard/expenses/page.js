@@ -68,21 +68,26 @@ export default function ExpensesPage() {
   const totalAmount = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
   return (
-    <div className="px-4 py-6 sm:px-0">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Expenses
-        </h1>
+    <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            Expenses
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Manage and track your expenses
+          </p>
+        </div>
         <Link
           href="/dashboard/expenses/new"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium"
+          className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all transform hover:scale-105 shadow-lg shadow-blue-500/50 text-center"
         >
-          Add Expense
+          + Add Expense
         </Link>
       </div>
 
       {/* Filters */}
-      <div className="bg-white shadow rounded-lg p-6 mb-6 dark:bg-gray-800">
+      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-2xl p-6 mb-6 border border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -147,7 +152,7 @@ export default function ExpensesPage() {
       </div>
 
       {/* Summary */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 dark:bg-blue-900/20 dark:border-blue-800">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6 mb-6 shadow-lg">
         <div className="flex justify-between items-center">
           <span className="text-blue-800 dark:text-blue-200 font-medium">
             Total Expenses:
@@ -164,14 +169,15 @@ export default function ExpensesPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       ) : expenses.length === 0 ? (
-        <div className="bg-white shadow rounded-lg p-12 text-center dark:bg-gray-800">
-          <p className="text-gray-500 dark:text-gray-400">
+        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-2xl p-12 text-center border border-gray-200 dark:border-gray-700">
+          <p className="text-gray-500 dark:text-gray-400 text-lg">
             No expenses found. Add your first expense to get started!
           </p>
         </div>
       ) : (
-        <div className="bg-white shadow rounded-lg overflow-hidden dark:bg-gray-800">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <div className="bg-white shadow-lg rounded-2xl overflow-hidden dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">
@@ -233,6 +239,7 @@ export default function ExpensesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

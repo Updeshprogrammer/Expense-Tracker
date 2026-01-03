@@ -49,8 +49,20 @@ export async function POST(request) {
     );
   } catch (error) {
     console.error('Registration error:', error);
+    
+    // Check for MongoDB connection errors
+    if (error.message?.includes('MongoServerError') || error.message?.includes('MongoClient')) {
+      return NextResponse.json(
+        { error: 'Database connection failed. Please check your MongoDB configuration.' },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? error.message : 'An error occurred during registration'
+      },
       { status: 500 }
     );
   }

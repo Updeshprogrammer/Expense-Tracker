@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { formatCurrency } from '@/lib/currency';
+import { useCurrency } from '@/hooks/useCurrency';
 
-const CATEGORIES = [
+const DEFAULT_CATEGORIES = [
   'Food',
   'Travel',
   'Rent',
@@ -17,7 +19,9 @@ const CATEGORIES = [
 ];
 
 export default function ExpensesPage() {
+  const { currency } = useCurrency();
   const [expenses, setExpenses] = useState([]);
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     category: 'all',
@@ -25,6 +29,22 @@ export default function ExpensesPage() {
     startDate: '',
     endDate: '',
   });
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories');
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data.categories || DEFAULT_CATEGORIES);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
 
   useEffect(() => {
     fetchExpenses();
@@ -115,7 +135,7 @@ export default function ExpensesPage() {
               }
             >
               <option value="all">All Categories</option>
-              {CATEGORIES.map((cat) => (
+              {categories.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
                 </option>
@@ -158,7 +178,7 @@ export default function ExpensesPage() {
             Total Expenses:
           </span>
           <span className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-            ${totalAmount.toFixed(2)}
+            {formatCurrency(totalAmount, currency)}
           </span>
         </div>
       </div>
@@ -219,7 +239,7 @@ export default function ExpensesPage() {
                     {format(new Date(expense.date), 'MMM dd, yyyy')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                    ${expense.amount.toFixed(2)}
+                    {formatCurrency(expense.amount, currency)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Link

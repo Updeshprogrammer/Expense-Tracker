@@ -3,18 +3,72 @@
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currency, setCurrency] = useState('INR');
+  const [loadingCurrency, setLoadingCurrency] = useState(true);
+
+  useEffect(() => {
+    if (session) {
+      fetchCurrency();
+    }
+  }, [session]);
+
+  const fetchCurrency = async () => {
+    try {
+      const response = await fetch('/api/user/preferences');
+      if (response.ok) {
+        const data = await response.json();
+        setCurrency(data.currency || 'INR');
+      }
+    } catch (error) {
+      console.error('Error fetching currency:', error);
+    } finally {
+      setLoadingCurrency(false);
+    }
+  };
+
+  const handleCurrencyChange = async (e) => {
+    const newCurrency = e.target.value;
+    const oldCurrency = currency;
+    setCurrency(newCurrency); // Optimistically update UI
+    
+    try {
+      const response = await fetch('/api/user/preferences', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ currency: newCurrency }),
+      });
+
+      if (response.ok) {
+        // Reload page to update all currency displays
+        window.location.reload();
+      } else {
+        // Revert on error
+        setCurrency(oldCurrency);
+        const errorData = await response.json();
+        alert(errorData.error || 'Failed to update currency');
+      }
+    } catch (error) {
+      // Revert on error
+      setCurrency(oldCurrency);
+      console.error('Error updating currency:', error);
+      alert('Failed to update currency. Please try again.');
+    }
+  };
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard' },
     { name: 'Expenses', href: '/dashboard/expenses' },
     { name: 'Analytics', href: '/dashboard/analytics' },
     { name: 'Budget', href: '/dashboard/budget' },
+    ...(session?.user?.role === 'admin' ? [{ name: 'Admin', href: '/dashboard/admin' }] : []),
   ];
 
   if (!session) return null;
@@ -50,6 +104,16 @@ export default function Navbar() {
           </div>
           <div className="hidden sm:flex sm:items-center sm:space-x-4">
             <div className="flex items-center space-x-3">
+              {!loadingCurrency && (
+                <select
+                  value={currency}
+                  onChange={handleCurrencyChange}
+                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
+                >
+                  <option value="USD">USD ($)</option>
+                  <option value="INR">INR (₹)</option>
+                </select>
+              )}
               <div className="hidden md:block text-right">
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
                   {session.user?.name}
@@ -115,6 +179,21 @@ export default function Navbar() {
               );
             })}
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+              {!loadingCurrency && (
+                <div className="px-3 py-2 mb-2">
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Currency
+                  </label>
+                  <select
+                    value={currency}
+                    onChange={handleCurrencyChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
+                  >
+                    <option value="USD">USD ($)</option>
+                    <option value="INR">INR (₹)</option>
+                  </select>
+                </div>
+              )}
               <div className="px-3 py-2">
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
                   {session.user?.name}

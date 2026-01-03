@@ -26,6 +26,17 @@ export async function GET(request) {
       const start = new Date(year, 0, 1);
       const end = new Date(year, 11, 31, 23, 59, 59);
       query.date = { $gte: start, $lte: end };
+    } else if (type === 'category') {
+      // For category type, filter by month if provided, otherwise use year
+      if (month) {
+        const start = new Date(year, parseInt(month) - 1, 1);
+        const end = new Date(year, parseInt(month), 0, 23, 59, 59);
+        query.date = { $gte: start, $lte: end };
+      } else {
+        const start = new Date(year, 0, 1);
+        const end = new Date(year, 11, 31, 23, 59, 59);
+        query.date = { $gte: start, $lte: end };
+      }
     }
 
     const expenses = await expensesCollection.find(query).toArray();
@@ -52,7 +63,7 @@ export async function GET(request) {
       const date = new Date(exp.date);
       const key = type === 'monthly' 
         ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-        : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        : `${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
       
       if (!breakdown[key]) {
         breakdown[key] = 0;

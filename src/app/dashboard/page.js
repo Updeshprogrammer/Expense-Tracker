@@ -3,14 +3,27 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { formatCurrency } from '@/lib/currency';
+import { useCurrency } from '@/hooks/useCurrency';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF7C7C'];
 
 export default function Dashboard() {
   const { data: session } = useSession();
+  const { currency } = useCurrency();
   const [stats, setStats] = useState({
     totalExpenses: 0,
     monthlyExpenses: 0,
     categoryCount: 0,
     budget: null,
+    categoryData: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +41,7 @@ export default function Dashboard() {
 
       // Fetch monthly expenses
       const expensesRes = await fetch(
-        `/api/expenses?month={month}&year=${year}`
+        `/api/expenses?month=${month}&year=${year}`
       );
       const expenses = await expensesRes.json();
 
@@ -49,6 +62,7 @@ export default function Dashboard() {
         monthlyExpenses: monthlyTotal,
         categoryCount: analytics.categoryData?.length || 0,
         budget: budgetData,
+        categoryData: analytics.categoryData || [],
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -74,7 +88,7 @@ export default function Dashboard() {
   const statCards = [
     {
       title: 'Monthly Expenses',
-      value: `$${stats.monthlyExpenses.toFixed(2)}`,
+      value: formatCurrency(stats.monthlyExpenses, currency),
       icon: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -97,7 +111,7 @@ export default function Dashboard() {
     {
       title: 'Monthly Budget',
       value: stats.budget?.budget?.amount
-        ? `$${stats.budget.budget.amount.toFixed(2)}`
+        ? formatCurrency(stats.budget.budget.amount, currency)
         : 'Not set',
       icon: (
         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -201,6 +215,39 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Pie Chart */}
+      {stats.categoryData && stats.categoryData.length > 0 && (
+        <div className="mb-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            Expenses by Category
+          </h2>
+          <ResponsiveContainer width="100%" height={400}>
+            <PieChart>
+              <Pie
+                data={stats.categoryData}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                label={({ category, percent }) =>
+                  `${category}: ${(percent * 100).toFixed(0)}%`
+                }
+                outerRadius={120}
+                fill="#8884d8"
+                dataKey="amount"
+              >
+                {stats.categoryData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={COLORS[index % COLORS.length]}
+                  />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value) => formatCurrency(value, currency)} />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       )}
 

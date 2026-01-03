@@ -40,6 +40,7 @@ export async function POST(request) {
       email,
       password: hashedPassword,
       role: role === 'admin' ? 'admin' : 'user',
+      currency: 'INR', // Default currency set to INR
       createdAt: new Date(),
     });
 

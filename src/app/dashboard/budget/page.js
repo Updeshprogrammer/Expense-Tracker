@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { formatCurrency } from '@/lib/currency';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function BudgetPage() {
+  const { currency } = useCurrency();
   const [budget, setBudget] = useState(null);
   const [amount, setAmount] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -136,7 +139,7 @@ export default function BudgetPage() {
             )}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Budget Amount ($)
+                Budget Amount ({currency})
               </label>
               <input
                 type="number"
@@ -170,7 +173,7 @@ export default function BudgetPage() {
                     Budget
                   </span>
                   <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                    ${budget.budget.amount.toFixed(2)}
+                    {formatCurrency(budget.budget.amount, currency)}
                   </span>
                 </div>
                 <div className="flex justify-between mb-2">
@@ -178,7 +181,7 @@ export default function BudgetPage() {
                     Spent
                   </span>
                   <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                    ${budget.totalExpenses.toFixed(2)}
+                    {formatCurrency(budget.totalExpenses, currency)}
                   </span>
                 </div>
                 <div className="flex justify-between mb-4">
@@ -194,7 +197,7 @@ export default function BudgetPage() {
                         : 'text-green-600'
                     }`}
                   >
-                    ${budget.remaining.toFixed(2)}
+                    {formatCurrency(budget.remaining, currency)}
                   </span>
                 </div>
               </div>
@@ -238,7 +241,7 @@ export default function BudgetPage() {
                       <p className="text-sm text-red-700 dark:text-red-300">
                         <strong>Budget Exceeded!</strong> You have exceeded your
                         monthly budget by{' '}
-                        ${Math.abs(budget.remaining).toFixed(2)}.
+                        {formatCurrency(Math.abs(budget.remaining), currency)}.
                       </p>
                     </div>
                   </div>

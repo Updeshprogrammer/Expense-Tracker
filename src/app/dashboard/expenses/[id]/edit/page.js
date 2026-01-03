@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { formatCurrency } from '@/lib/currency';
+import { useCurrency } from '@/hooks/useCurrency';
 
-const CATEGORIES = [
+const DEFAULT_CATEGORIES = [
   'Food',
   'Travel',
   'Rent',
@@ -18,6 +20,10 @@ const CATEGORIES = [
 export default function EditExpensePage() {
   const router = useRouter();
   const params = useParams();
+  const { currency } = useCurrency();
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+  const [showCustomCategory, setShowCustomCategory] = useState(false);
+  const [customCategoryName, setCustomCategoryName] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -30,8 +36,21 @@ export default function EditExpensePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    fetchCategories();
     fetchExpense();
   }, [params.id]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories');
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data.categories || DEFAULT_CATEGORIES);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
 
   const fetchExpense = async () => {
     try {
@@ -56,10 +75,52 @@ export default function EditExpensePage() {
   };
 
   const handleChange = (e) => {
+    const value = e.target.value;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [e.target.name]: value,
     });
+
+    // Show custom category input when "Other" is selected
+    if (e.target.name === 'category') {
+      setShowCustomCategory(value === 'Other');
+      if (value !== 'Other') {
+        setCustomCategoryName('');
+      }
+    }
+  };
+
+  const handleAddCustomCategory = async () => {
+    if (!customCategoryName.trim()) {
+      setError('Please enter a category name');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/categories', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: customCategoryName.trim() }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.error || 'Failed to add category');
+        return;
+      }
+
+      // Add the new category to the list and select it
+      const newCategory = customCategoryName.trim();
+      setCategories([...categories.filter(c => c !== 'Other'), newCategory, 'Other']);
+      setFormData({ ...formData, category: newCategory });
+      setShowCustomCategory(false);
+      setCustomCategoryName('');
+      setError('');
+    } catch (error) {
+      setError('An error occurred. Please try again.');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -143,7 +204,7 @@ export default function EditExpensePage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Amount *
+                  Amount ({currency}) *
                 </label>
                 <input
                   type="number"
@@ -167,12 +228,36 @@ export default function EditExpensePage() {
                   value={formData.category}
                   onChange={handleChange}
                 >
-                  {CATEGORIES.map((cat) => (
+                  {categories.map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
                     </option>
                   ))}
                 </select>
+                {showCustomCategory && (
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Enter new category name"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      value={customCategoryName}
+                      onChange={(e) => setCustomCategoryName(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddCustomCategory();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomCategory}
+                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                    >
+                      Add
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 

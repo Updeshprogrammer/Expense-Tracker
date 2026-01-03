@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { formatCurrency } from '@/lib/currency';
+import { useCurrency } from '@/hooks/useCurrency';
 import {
   BarChart,
   Bar,
@@ -19,6 +21,7 @@ import {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF7C7C'];
 
 export default function AnalyticsPage() {
+  const { currency } = useCurrency();
   const [analytics, setAnalytics] = useState({
     monthly: [],
     yearly: [],
@@ -157,32 +160,38 @@ export default function AnalyticsPage() {
         {selectedPeriod === 'category' ? (
           <div className="bg-white shadow rounded-lg p-6 dark:bg-gray-800">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Expenses by Category
+              Expenses by Category (Pie Chart)
             </h2>
-            <ResponsiveContainer width="100%" height={400}>
-              <PieChart>
-                <Pie
-                  data={analytics.category}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ category, percent }) =>
-                    `${category}: ${(percent * 100).toFixed(0)}%`
-                  }
-                  outerRadius={120}
-                  fill="#8884d8"
-                  dataKey="amount"
-                >
-                  {analytics.category.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
-              </PieChart>
-            </ResponsiveContainer>
+            {analytics.category && analytics.category.length > 0 ? (
+              <ResponsiveContainer width="100%" height={400}>
+                <PieChart>
+                  <Pie
+                    data={analytics.category}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ category, percent }) =>
+                      `${category}: ${(percent * 100).toFixed(0)}%`
+                    }
+                    outerRadius={120}
+                    fill="#8884d8"
+                    dataKey="amount"
+                  >
+                    {analytics.category.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatCurrency(value, currency)} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-400">
+                <p className="text-gray-500 dark:text-gray-400">No data available</p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="bg-white shadow rounded-lg p-6 dark:bg-gray-800">
@@ -194,7 +203,7 @@ export default function AnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="period" />
                 <YAxis />
-                <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                <Tooltip formatter={(value) => formatCurrency(value, currency)} />
                 <Legend />
                 <Bar dataKey="amount" fill="#0088FE" name="Amount ($)" />
               </BarChart>
@@ -227,7 +236,7 @@ export default function AnalyticsPage() {
                       </span>
                     </div>
                     <span className="font-semibold text-gray-900 dark:text-white">
-                      ${item.amount.toFixed(2)}
+                      {formatCurrency(item.amount, currency)}
                     </span>
                   </div>
                 ))}
@@ -243,7 +252,7 @@ export default function AnalyticsPage() {
                       {item.period}
                     </span>
                     <span className="font-semibold text-gray-900 dark:text-white">
-                      ${item.amount.toFixed(2)}
+                      {formatCurrency(item.amount, currency)}
                     </span>
                   </div>
                 ))}

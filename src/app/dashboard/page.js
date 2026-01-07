@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { formatCurrency } from '@/lib/currency';
 import { useCurrency } from '@/hooks/useCurrency';
+import AIInsights from '@/components/AIInsights';
 import {
   PieChart,
   Pie,
@@ -26,6 +27,8 @@ export default function Dashboard() {
     categoryData: [],
   });
   const [loading, setLoading] = useState(true);
+  const [currentMonth, setCurrentMonth] = useState(null);
+  const [currentYear, setCurrentYear] = useState(null);
 
   useEffect(() => {
     if (session) {
@@ -38,6 +41,8 @@ export default function Dashboard() {
       const currentDate = new Date();
       const month = currentDate.getMonth() + 1;
       const year = currentDate.getFullYear();
+      setCurrentMonth(month);
+      setCurrentYear(year);
 
       // Fetch monthly expenses
       const expensesRes = await fetch(
@@ -215,6 +220,13 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* AI-Powered Insights */}
+      {currentMonth && currentYear && (
+        <div className="mb-8">
+          <AIInsights month={currentMonth} year={currentYear} />
         </div>
       )}
 

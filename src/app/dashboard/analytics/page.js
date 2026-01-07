@@ -179,7 +179,7 @@ export default function AnalyticsPage() {
                   >
                     {analytics.category.map((entry, index) => (
                       <Cell
-                        key={`cell-${index}`}
+                        key={`cell-${currency}  {index}`}
                         fill={COLORS[index % COLORS.length]}
                       />
                     ))}
@@ -205,7 +205,8 @@ export default function AnalyticsPage() {
                 <YAxis />
                 <Tooltip formatter={(value) => formatCurrency(value, currency)} />
                 <Legend />
-                <Bar dataKey="amount" fill="#0088FE" name="Amount ($)" />
+                <Bar dataKey="amount" fill="#0088FE" name="Amount (₹)" />
+                
               </BarChart>
             </ResponsiveContainer>
           </div>

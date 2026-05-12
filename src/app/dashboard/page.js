@@ -3,18 +3,18 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { formatCurrency } from '@/lib/currency';
 import { useCurrency } from '@/hooks/useCurrency';
-import AIInsights from '@/components/AIInsights';
 import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+  DashboardSkeleton,
+  ChartSkeleton,
+} from '@/components/skeletons/DashboardSkeleton';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FFC658', '#FF7C7C'];
+const DashboardChart = dynamic(() => import('./DashboardChart'), {
+  ssr: false,
+  loading: () => <ChartSkeleton />,
+});
 
 export default function Dashboard() {
   const { data: session } = useSession();
@@ -27,8 +27,7 @@ export default function Dashboard() {
     categoryData: [],
   });
   const [loading, setLoading] = useState(true);
-  const [currentMonth, setCurrentMonth] = useState(null);
-  const [currentYear, setCurrentYear] = useState(null);
+  const [isMobileChart, setIsMobileChart] = useState(false);
 
   useEffect(() => {
     if (session) {
@@ -36,31 +35,34 @@ export default function Dashboard() {
     }
   }, [session]);
 
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    const update = () => setIsMobileChart(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
   const fetchStats = async () => {
     try {
       const currentDate = new Date();
       const month = currentDate.getMonth() + 1;
       const year = currentDate.getFullYear();
-      setCurrentMonth(month);
-      setCurrentYear(year);
 
-      // Fetch monthly expenses
-      const expensesRes = await fetch(
-        `/api/expenses?month=${month}&year=${year}`
-      );
-      const expenses = await expensesRes.json();
+      const [expensesRes, budgetRes, analyticsRes] = await Promise.all([
+        fetch(`/api/expenses?month=${month}&year=${year}`),
+        fetch(`/api/budgets?month=${month}&year=${year}`),
+        fetch(`/api/analytics?type=category&month=${month}&year=${year}`),
+      ]);
 
-      // Fetch budget
-      const budgetRes = await fetch(`/api/budgets?month=${month}&year=${year}`);
-      const budgetData = await budgetRes.json();
+      const [expenses, budgetData, analytics] = await Promise.all([
+        expensesRes.json(),
+        budgetRes.json(),
+        analyticsRes.json(),
+      ]);
 
-      // Fetch category analytics
-      const analyticsRes = await fetch(
-        `/api/analytics?type=category&month=${month}&year=${year}`
-      );
-      const analytics = await analyticsRes.json();
-
-      const monthlyTotal = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+      const expenseRows = Array.isArray(expenses) ? expenses : [];
+      const monthlyTotal = expenseRows.reduce((sum, exp) => sum + exp.amount, 0);
 
       setStats({
         totalExpenses: analytics.total || 0,
@@ -77,14 +79,7 @@ export default function Dashboard() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const budgetPercentage = stats.budget?.percentage || 0;
@@ -155,35 +150,40 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <div className="pb-2 pt-2 sm:py-8 sm:pb-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-          Welcome back, {session?.user?.name?.split(' ')[0]}! 👋
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white sm:text-4xl sm:mb-2">
+          Welcome back, {session?.user?.name?.split(' ')[0]}!
+          <span className="ml-1 inline-block sm:ml-2" aria-hidden="true">
+            👋
+          </span>
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 text-lg">
-          Here's an overview of your expenses
+        <p className="mt-1 text-base text-gray-600 dark:text-gray-400 sm:text-lg">
+          Here&apos;s an overview of your expenses
         </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+      {/* Stats Grid — single column on phones for readability */}
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:mb-8 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
         {statCards.map((card, index) => (
           <div
             key={index}
-            className={`bg-gradient-to-br ${card.bgGradient} backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1`}
+            className={`rounded-2xl border border-gray-200 bg-gradient-to-br ${card.bgGradient} p-5 shadow-lg backdrop-blur-sm transition-transform active:scale-[0.99] dark:border-gray-700 sm:p-6 sm:hover:-translate-y-1 sm:hover:shadow-xl`}
           >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 bg-gradient-to-br ${card.gradient} rounded-xl shadow-lg`}>
-                <div className="text-white">{card.icon}</div>
+            <div className="mb-3 flex items-center justify-between sm:mb-4">
+              <div
+                className={`rounded-xl bg-gradient-to-br ${card.gradient} p-2.5 shadow-lg sm:p-3`}
+              >
+                <div className="text-white [&_svg]:h-6 [&_svg]:w-6">{card.icon}</div>
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+              <p className="mb-0.5 text-xs font-medium uppercase tracking-wide text-gray-600 dark:text-gray-400 sm:text-sm sm:normal-case sm:tracking-normal">
                 {card.title}
               </p>
               <p
-                className={`text-2xl sm:text-3xl font-bold ${
+                className={`text-xl font-bold tabular-nums sm:text-2xl lg:text-3xl ${
                   card.textColor || 'text-gray-900 dark:text-white'
                 }`}
               >
@@ -196,8 +196,8 @@ export default function Dashboard() {
 
       {/* Budget Alert */}
       {isOverBudget && (
-        <div className="mb-8 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-l-4 border-red-500 rounded-xl p-4 sm:p-6 shadow-lg">
-          <div className="flex items-start">
+        <div className="mb-6 rounded-xl border-l-4 border-red-500 bg-gradient-to-r from-red-50 to-red-100 p-4 shadow-lg dark:from-red-900/20 dark:to-red-800/20 sm:mb-8 sm:p-6">
+          <div className="flex items-start gap-3">
             <div className="flex-shrink-0">
               <svg
                 className="h-6 w-6 text-red-500"
@@ -211,7 +211,7 @@ export default function Dashboard() {
                 />
               </svg>
             </div>
-            <div className="ml-3 flex-1">
+            <div className="min-w-0 flex-1">
               <h3 className="text-lg font-semibold text-red-800 dark:text-red-300 mb-1">
                 Budget Exceeded!
               </h3>
@@ -223,84 +223,50 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* AI-Powered Insights */}
-      {currentMonth && currentYear && (
-        <div className="mb-8">
-          <AIInsights month={currentMonth} year={currentYear} />
-        </div>
-      )}
-
-      {/* Pie Chart */}
       {stats.categoryData && stats.categoryData.length > 0 && (
-        <div className="mb-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-6">
-            Expenses by Category
-          </h2>
-          <ResponsiveContainer width="100%" height={400}>
-            <PieChart>
-              <Pie
-                data={stats.categoryData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ category, percent }) =>
-                  `${category}: ${(percent * 100).toFixed(0)}%`
-                }
-                outerRadius={120}
-                fill="#8884d8"
-                dataKey="amount"
-              >
-                {stats.categoryData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => formatCurrency(value, currency)} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+        <DashboardChart
+          categoryData={stats.categoryData}
+          currency={currency}
+          isMobileChart={isMobileChart}
+        />
       )}
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sm:p-8 border border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-6">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-lg dark:border-gray-700 dark:bg-gray-800 sm:p-8">
+          <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white sm:mb-6 sm:text-2xl">
             Quick Actions
           </h2>
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             <Link
               href="/dashboard/expenses/new"
-              className="block w-full text-left px-6 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all transform hover:scale-[1.02] shadow-lg shadow-blue-500/50"
+              className="flex min-h-[48px] touch-manipulation items-center justify-between rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 px-5 py-3.5 text-base font-semibold text-white shadow-lg shadow-blue-500/40 transition active:opacity-90 sm:py-4 sm:hover:scale-[1.02] sm:hover:from-blue-700 sm:hover:to-purple-700"
             >
-              <div className="flex items-center justify-between">
-                <span>Add New Expense</span>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
+              <span>Add New Expense</span>
+              <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
             </Link>
             <Link
               href="/dashboard/budget"
-              className="block w-full text-left px-6 py-4 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+              className="flex min-h-[48px] touch-manipulation items-center rounded-xl bg-gray-100 px-5 py-3.5 text-base font-semibold text-gray-800 transition active:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:active:bg-gray-600 sm:py-4 sm:hover:bg-gray-200 dark:sm:hover:bg-gray-600"
             >
               Set Monthly Budget
             </Link>
             <Link
               href="/dashboard/analytics"
-              className="block w-full text-left px-6 py-4 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all"
+              className="flex min-h-[48px] touch-manipulation items-center rounded-xl bg-gray-100 px-5 py-3.5 text-base font-semibold text-gray-800 transition active:bg-gray-200 dark:bg-gray-700 dark:text-gray-200 dark:active:bg-gray-600 sm:py-4 sm:hover:bg-gray-200 dark:sm:hover:bg-gray-600"
             >
               View Analytics
             </Link>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sm:p-8 border border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-6">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-lg dark:border-gray-700 dark:bg-gray-800 sm:p-8">
+          <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white sm:mb-6 sm:text-2xl">
             Recent Activity
           </h2>
-          <div className="text-center py-8">
+          <div className="py-6 text-center sm:py-8">
             <svg
               className="mx-auto h-12 w-12 text-gray-400"
               fill="none"
@@ -319,10 +285,10 @@ export default function Dashboard() {
             </p>
             <Link
               href="/dashboard/expenses"
-              className="inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-semibold"
+              className="inline-flex min-h-[44px] touch-manipulation items-center justify-center gap-2 rounded-lg px-3 py-2 text-base font-semibold text-blue-600 active:bg-blue-50 dark:text-blue-400 dark:active:bg-blue-950/40 sm:hover:text-blue-700 dark:sm:hover:text-blue-300"
             >
               View all expenses
-              <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { formatCurrency } from '@/lib/currency';
 import { useCurrency } from '@/hooks/useCurrency';
 
 const DEFAULT_CATEGORIES = [
@@ -16,6 +15,11 @@ const DEFAULT_CATEGORIES = [
   'Utilities',
   'Other',
 ];
+
+const inputClass =
+  'min-h-[48px] w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 shadow-sm outline-none transition placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder:text-gray-500';
+
+const labelClass = 'mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-200';
 
 export default function NewExpensePage() {
   const router = useRouter();
@@ -56,7 +60,6 @@ export default function NewExpensePage() {
       [e.target.name]: value,
     });
 
-    // Show custom category input when "Other" is selected
     if (e.target.name === 'category') {
       setShowCustomCategory(value === 'Other');
       if (value !== 'Other') {
@@ -86,9 +89,8 @@ export default function NewExpensePage() {
         return;
       }
 
-      // Add the new category to the list and select it
       const newCategory = customCategoryName.trim();
-      setCategories([...categories.filter(c => c !== 'Other'), newCategory, 'Other']);
+      setCategories([...categories.filter((c) => c !== 'Other'), newCategory, 'Other']);
       setFormData({ ...formData, category: newCategory });
       setShowCustomCategory(false);
       setCustomCategoryName('');
@@ -127,71 +129,109 @@ export default function NewExpensePage() {
   };
 
   return (
-    <div className="px-4 py-6 sm:px-0">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-        Add New Expense
-      </h1>
+    <div className="pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))] sm:pb-6">
+      {/* Top bar — thumb-friendly back + title */}
+      <div className="mb-4 flex items-center gap-3 sm:mb-6">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 shadow-sm transition active:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:active:bg-gray-700"
+          aria-label="Go back"
+        >
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl font-bold leading-tight text-gray-900 dark:text-white sm:text-3xl">
+            Add expense
+          </h1>
+          <p className="mt-0.5 truncate text-sm text-gray-500 dark:text-gray-400">
+            {currency} · today or any date
+          </p>
+        </div>
+      </div>
 
-      <div className="max-w-2xl">
-        <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg p-6 dark:bg-gray-800">
+      <div className="mx-auto max-w-2xl">
+        <form
+          onSubmit={handleSubmit}
+          id="new-expense-form"
+          className="rounded-2xl border border-gray-200 bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-800 sm:p-8"
+        >
           {error && (
-            <div className="mb-4 bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded">
+            <div
+              className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800/60 dark:bg-red-950/40 dark:text-red-200"
+              role="alert"
+            >
               {error}
             </div>
           )}
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="title" className={labelClass}>
                 Title *
               </label>
               <input
+                id="title"
                 type="text"
                 name="title"
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                autoComplete="off"
+                enterKeyHint="next"
+                className={inputClass}
                 value={formData.title}
                 onChange={handleChange}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="description" className={labelClass}>
                 Description
               </label>
               <textarea
+                id="description"
                 name="description"
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                enterKeyHint="done"
+                className={`${inputClass} min-h-[120px] resize-y py-3`}
                 value={formData.description}
                 onChange={handleChange}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Stack on mobile — full width fields */}
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="amount" className={labelClass}>
                   Amount ({currency}) *
                 </label>
                 <input
+                  id="amount"
                   type="number"
                   name="amount"
                   step="0.01"
+                  inputMode="decimal"
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  enterKeyHint="next"
+                  className={inputClass}
                   value={formData.amount}
                   onChange={handleChange}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label htmlFor="category" className={labelClass}>
                   Category *
                 </label>
                 <select
+                  id="category"
                   name="category"
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className={`${inputClass} appearance-none bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10 dark:bg-gray-800`}
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+                  }}
                   value={formData.category}
                   onChange={handleChange}
                 >
@@ -202,14 +242,14 @@ export default function NewExpensePage() {
                   ))}
                 </select>
                 {showCustomCategory && (
-                  <div className="mt-2 flex gap-2">
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-stretch">
                     <input
                       type="text"
-                      placeholder="Enter new category name"
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      placeholder="New category name"
+                      className={inputClass}
                       value={customCategoryName}
                       onChange={(e) => setCustomCategoryName(e.target.value)}
-                      onKeyPress={(e) => {
+                      onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
                           handleAddCustomCategory();
@@ -219,7 +259,7 @@ export default function NewExpensePage() {
                     <button
                       type="button"
                       onClick={handleAddCustomCategory}
-                      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                      className="min-h-[48px] shrink-0 touch-manipulation rounded-xl bg-emerald-600 px-5 py-3 text-base font-semibold text-white transition active:bg-emerald-700 sm:w-auto sm:px-6"
                     >
                       Add
                     </button>
@@ -229,39 +269,65 @@ export default function NewExpensePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="date" className={labelClass}>
                 Date *
               </label>
               <input
+                id="date"
                 type="date"
                 name="date"
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className={inputClass}
                 value={formData.date}
                 onChange={handleChange}
               />
             </div>
           </div>
 
-          <div className="mt-6 flex justify-end space-x-3">
+          {/* Desktop / tablet actions in document flow */}
+          <div className="mt-8 hidden gap-3 sm:flex sm:justify-end">
             <button
               type="button"
               onClick={() => router.back()}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+              className="min-h-[48px] touch-manipulation rounded-xl border border-gray-300 px-6 py-3 text-base font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              form="new-expense-form"
+              className="min-h-[48px] touch-manipulation rounded-xl bg-blue-600 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? 'Creating...' : 'Create Expense'}
+              {loading ? 'Saving…' : 'Save expense'}
             </button>
           </div>
         </form>
       </div>
+
+      {/* Mobile: fixed action bar — easy thumb reach */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 p-3 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] backdrop-blur-md dark:border-gray-700 dark:bg-gray-900/95 sm:hidden">
+        <div
+          className="mx-auto flex max-w-2xl gap-3"
+          style={{ paddingBottom: 'max(0.25rem, env(safe-area-inset-bottom))' }}
+        >
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="min-h-[48px] min-w-0 flex-1 touch-manipulation rounded-xl border border-gray-300 py-3 text-base font-semibold text-gray-800 active:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:active:bg-gray-800"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            form="new-expense-form"
+            className="min-h-[48px] min-w-0 flex-[1.35] touch-manipulation rounded-xl bg-blue-600 py-3 text-base font-semibold text-white shadow-md active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
-

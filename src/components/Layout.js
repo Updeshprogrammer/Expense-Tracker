@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Navbar from './Navbar';
+import { ShellSkeleton } from './skeletons/ShellSkeleton';
 
 export default function Layout({ children }) {
   const { data: session, status } = useSession();
@@ -16,14 +17,7 @@ export default function Layout({ children }) {
   }, [status, router]);
 
   if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
+    return <ShellSkeleton />;
   }
 
   if (!session) {
@@ -33,7 +27,7 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Navbar />
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8 safe-px safe-pb min-h-[calc(100dvh-4rem)]">
         {children}
       </main>
     </div>
